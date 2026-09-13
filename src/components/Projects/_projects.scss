@@ -1,0 +1,137 @@
+.projects {
+  padding: 140px 0;
+
+  &__container {
+    width: min(92%, 1400px);
+    margin: 0 auto;
+  }
+
+  &__header {
+    margin-bottom: 80px;
+  }
+
+  &__eyebrow {
+    margin-bottom: 24px;
+
+    color: #4f7cff;
+
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+
+  &__title {
+    display: flex;
+    flex-direction: column;
+
+    max-width: 700px;
+
+    font-size: clamp(48px, 6vw, 90px);
+    line-height: 0.95;
+    letter-spacing: -0.05em;
+
+    span {
+      color: #9a9a9a;
+    }
+  }
+  .projects {
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 140px;
+  }
+}
+}
+
+.project {
+  &__visual {
+    width: 100%;
+    aspect-ratio: 16 / 8;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #111;
+    border: 1px solid #262626;
+    border-radius: 16px;
+
+    overflow: hidden;
+  }
+
+  &__placeholder {
+    color: #4a4a4a;
+    font-size: 13px;
+    letter-spacing: 0.15em;
+  }
+
+  &__content {
+    margin-top: 28px;
+  }
+
+  &__heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding-bottom: 20px;
+    border-bottom: 1px solid #262626;
+
+    h3 {
+      font-size: clamp(32px, 4vw, 56px);
+      letter-spacing: -0.04em;
+    }
+
+    span {
+      color: #777;
+      font-size: 14px;
+    }
+  }
+
+  &__description {
+    max-width: 600px;
+    margin-top: 24px;
+
+    color: #9a9a9a;
+    font-size: 16px;
+    line-height: 1.7;
+  }
+
+  &__technologies {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+
+    margin-top: 24px;
+
+    list-style: none;
+
+    li {
+      padding: 7px 12px;
+
+      border: 1px solid #2f2f2f;
+      border-radius: 100px;
+
+      color: #b3b3b3;
+      font-size: 12px;
+    }
+  }
+
+  &__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+
+    margin-top: 32px;
+
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+
+    transition: gap 0.25s ease;
+
+    &:hover {
+      gap: 18px;
+    }
+  }
+}
