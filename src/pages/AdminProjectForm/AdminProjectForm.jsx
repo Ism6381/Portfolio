@@ -399,7 +399,7 @@ function AdminProjectForm() {
           : "Project saved successfully!"
       );
 
-      navigate("/admin");
+      navigate("/ii-control-7x4k");
     } catch (error) {
       console.error(
         "Error saving project:",
@@ -449,7 +449,7 @@ function AdminProjectForm() {
           </div>
 
           <Link
-            to="/admin"
+            to="/ii-control-7x4k"
             className="admin-project-form__back"
           >
             ← Back to dashboard
@@ -836,7 +836,7 @@ function AdminProjectForm() {
           </div>
 
           <div className="admin-project-form__footer">
-            <Link to="/admin">
+            <Link to="/ii-control-7x4k">
               Cancel
             </Link>
 

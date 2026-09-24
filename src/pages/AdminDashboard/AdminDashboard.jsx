@@ -51,7 +51,7 @@ function AdminDashboard() {
   } catch (error) {
     console.error("Logout error:", error);
   } finally {
-    navigate("/admin/login");
+    navigate("/ii-control-7x4k/login");
   }
 };
 
@@ -138,7 +138,7 @@ function AdminDashboard() {
             </div>
 
             <Link
-              to="/admin/projects/new"
+              to="/ii-control-7x4k/projects/new"
               className="admin-dashboard__add"
             >
               + Add Project
@@ -174,7 +174,7 @@ function AdminDashboard() {
 
                   <div className="admin-project__actions">
                     <Link
-                      to={`/admin/projects/${project.slug}/edit`}
+                     to={`/ii-control-7x4k/projects/${project.slug}/edit`}
                     >
                       Edit
                     </Link>

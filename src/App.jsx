@@ -35,6 +35,8 @@ const AdminProjectForm = lazy(
     )
 );
 
+const ADMIN_PATH = "/ii-control-7x4k";
+
 function App() {
   return (
     <>
@@ -53,12 +55,12 @@ function App() {
           />
 
           <Route
-            path="/admin/login"
+            path={`${ADMIN_PATH}/login`}
             element={<AdminLogin />}
           />
 
           <Route
-            path="/admin"
+            path={ADMIN_PATH}
             element={
               <ProtectedRoute>
                 <AdminDashboard />
@@ -67,7 +69,7 @@ function App() {
           />
 
           <Route
-            path="/admin/projects/new"
+            path={`${ADMIN_PATH}/projects/new`}
             element={
               <ProtectedRoute>
                 <AdminProjectForm />
@@ -76,7 +78,7 @@ function App() {
           />
 
           <Route
-            path="/admin/projects/:slug/edit"
+            path={`${ADMIN_PATH}/projects/:slug/edit`}
             element={
               <ProtectedRoute>
                 <AdminProjectForm />

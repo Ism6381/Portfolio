@@ -37,7 +37,7 @@ function ProtectedRoute({ children }) {
   if (!isAuthenticated) {
     return (
       <Navigate
-        to="/admin/login"
+        to="/ii-control-7x4k/login"
         replace
       />
     );

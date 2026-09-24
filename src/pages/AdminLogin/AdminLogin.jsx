@@ -44,7 +44,7 @@ function AdminLogin() {
         );
       }
 
-      navigate("/admin");
+      navigate("/ii-control-7x4k");
     } catch (error) {
       console.error("Login error:", error);
 
