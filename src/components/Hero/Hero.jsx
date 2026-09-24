@@ -1,5 +1,7 @@
 import "./_hero.scss";
-import profileImage from "../../assets/images/ProfilePic.png";
+import profile320 from "../../assets/images/profile-320.webp";
+import profile480 from "../../assets/images/profile-480.webp";
+import profile800 from "../../assets/images/profile-800.webp";
 
 function Hero() {
   return (
@@ -22,9 +24,23 @@ function Hero() {
 
           <div className="hero__image-wrapper">
             <img
-              src={profileImage}
-              alt="Ismail Ibrosh - Web Developer"
+              src={profile800}
+              srcSet={`
+                ${profile320} 320w,
+                ${profile480} 480w,
+                ${profile800} 800w
+              `}
+              sizes="
+                (max-width: 480px) 320px,
+                (max-width: 768px) 480px,
+                800px
+              "
+              alt="Portrait of Ismail Ibrosh"
               className="hero__image"
+              width="800"
+              height="1000"
+              fetchPriority="high"
+              decoding="async"
             />
           </div>
         </div>

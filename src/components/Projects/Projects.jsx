@@ -1,11 +1,59 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+
 import "./_projects.scss";
-import projects from "../../data/projects";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 function Projects() {
-  return (
-    <section className="projects" id="work">
-      <div className="projects__container">
+  const [projects, setProjects] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
 
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await fetch(
+          `${API_URL}/api/projects`
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to load projects");
+        }
+
+        const data = await response.json();
+
+        const sortedProjects = [...data].sort(
+          (a, b) =>
+            (a.number || "").localeCompare(
+              b.number || ""
+            )
+        );
+
+        setProjects(sortedProjects);
+      } catch (error) {
+        console.error(
+          "Error loading projects:",
+          error
+        );
+
+        setError(
+          "Projects could not be loaded."
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, []);
+
+  return (
+    <section
+      className="projects"
+      id="work"
+    >
+      <div className="projects__container">
         <div className="projects__header">
           <p className="projects__eyebrow">
             01 / Selected Work
@@ -17,48 +65,79 @@ function Projects() {
           </h2>
         </div>
 
-        <div className="projects__list">
-          {projects.map((project) => (
-            <article
-              className="project"
-              key={project.id}
-            >
-              <div className="project__visual">
-                <span className="project__placeholder">
-                  PROJECT IMAGE
-                </span>
-              </div>
+        {isLoading && (
+          <p>Loading projects...</p>
+        )}
 
-              <div className="project__content">
-                <div className="project__heading">
-                  <h3>{project.title}</h3>
-                  <span>{project.number}</span>
-                </div>
+        {error && (
+          <p>{error}</p>
+        )}
 
-                <p className="project__description">
-                  {project.description}
-                </p>
+        {!isLoading && !error && (
+          <div className="projects__list">
+            {projects.map((project) => {
+              const coverImage =
+                project.images?.[0];
 
-                <ul className="project__technologies">
-                  {project.technologies.map((technology) => (
-                    <li key={technology}>
-                      {technology}
-                    </li>
-                  ))}
-                </ul>
-
-                <a
-                  href={`/projects/${project.slug}`}
-                  className="project__link"
+              return (
+                <article
+                  className="project"
+                  key={project._id}
                 >
-                  View case study
-                  <span>↗</span>
-                </a>
-              </div>
-            </article>
-          ))}
-        </div>
+                  {coverImage && (
+                    <div className="project__visual">
+                      <img
+                        src={coverImage.url}
+                        alt={`${project.title} project`}
+                        className="project__image"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </div>
+                  )}
 
+                  <div className="project__content">
+                    <div className="project__heading">
+                      <h3>
+                        {project.title}
+                      </h3>
+
+                      <span>
+                        {project.number}
+                      </span>
+                    </div>
+
+                    <p className="project__description">
+                      {project.description}
+                    </p>
+
+                    <ul className="project__technologies">
+                      {project.technologies?.map(
+                        (technology) => (
+                          <li key={technology}>
+                            {technology}
+                          </li>
+                        )
+                      )}
+                    </ul>
+
+                    <Link
+                      to={`/projects/${project.slug}`}
+                      className="project__link"
+                    >
+                      View case study
+                      <span
+                        aria-hidden="true"
+                      >
+                        ↗
+                      </span>
+                    </Link>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
       </div>
     </section>
   );

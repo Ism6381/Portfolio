@@ -1,0 +1,212 @@
+@use "../../styles/abstracts/variables" as vars;
+@use "../../styles/abstracts/breakpoints" as bp;
+
+.about {
+  padding: 160px 0;
+
+  &__container {
+    width: min(92%, vars.$container-width);
+    margin: 0 auto;
+  }
+
+  &__eyebrow {
+    margin-bottom: 70px;
+
+    color: vars.$color-accent;
+
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+
+  &__content {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+
+    gap: 100px;
+
+    padding-top: 60px;
+
+    border-top: 1px solid vars.$color-border;
+  }
+
+  &__title {
+    display: flex;
+    flex-direction: column;
+
+    min-width: 0;
+
+    font-size: clamp(48px, 6vw, 90px);
+    line-height: 0.95;
+    letter-spacing: -0.05em;
+
+    span {
+      color: #777;
+    }
+  }
+
+  &__text {
+    min-width: 0;
+    max-width: 600px;
+
+    p {
+      margin-bottom: 24px;
+
+      color: #9f9f9f;
+
+      font-size: 17px;
+      line-height: 1.8;
+    }
+
+    p:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  &__intro {
+    color: #d5d5d5 !important;
+
+    strong {
+      color: vars.$color-text;
+      font-weight: 500;
+    }
+  }
+
+  // --------------------------------
+  // TABLET / SMALL LAPTOP
+  // 769px - 1200px
+  // --------------------------------
+
+  @include bp.tablet {
+    padding: vars.$section-padding-tablet 0;
+
+    &__container {
+      width: 90%;
+    }
+
+    &__eyebrow {
+      margin-bottom: 55px;
+
+      font-size: 12px;
+    }
+
+    &__content {
+      grid-template-columns: 1fr 1fr;
+
+      gap: 60px;
+
+      padding-top: 50px;
+    }
+
+    &__title {
+      font-size: clamp(
+        44px,
+        7vw,
+        72px
+      );
+    }
+
+    &__text {
+      p {
+        font-size: 16px;
+        line-height: 1.75;
+      }
+    }
+  }
+
+  // --------------------------------
+  // PHONE
+  // 481px - 768px
+  // --------------------------------
+
+  @include bp.phone {
+    padding: vars.$section-padding-phone 0;
+
+    &__container {
+      width: calc(100% - 48px);
+    }
+
+    &__eyebrow {
+      margin-bottom: 40px;
+
+      font-size: 11px;
+    }
+
+    &__content {
+      grid-template-columns: 1fr;
+
+      gap: 42px;
+
+      padding-top: 38px;
+    }
+
+    &__title {
+      font-size: clamp(
+        40px,
+        12vw,
+        64px
+      );
+
+      line-height: 0.98;
+    }
+
+    &__text {
+      max-width: 100%;
+
+      p {
+        margin-bottom: 20px;
+
+        font-size: 15px;
+        line-height: 1.7;
+      }
+    }
+  }
+
+  // --------------------------------
+  // SMALL PHONE
+  // <= 480px
+  // --------------------------------
+
+  @include bp.small-phone {
+    padding:
+      vars.$section-padding-small-phone
+      0;
+
+    &__container {
+      width: calc(100% - 36px);
+    }
+
+    &__eyebrow {
+      margin-bottom: 32px;
+
+      font-size: 10px;
+      letter-spacing: 0.14em;
+    }
+
+    &__content {
+      gap: 34px;
+
+      padding-top: 30px;
+    }
+
+    &__title {
+      font-size: clamp(
+        36px,
+        13vw,
+        54px
+      );
+
+      line-height: 1;
+      letter-spacing: -0.045em;
+    }
+
+    &__text {
+      p {
+        margin-bottom: 18px;
+
+        font-size: 14px;
+        line-height: 1.65;
+      }
+    }
+  }
+}
