@@ -219,13 +219,14 @@ app.post("/api/auth/login", async (req, res) => {
       }
     );
 
-    res.cookie("adminToken", token, {
-      httpOnly: true,
-      secure:
-        process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 24 * 60 * 60 * 1000,
-    });
+    const isProduction = process.env.NODE_ENV === "production";
+
+res.cookie("adminToken", token, {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: isProduction ? "none" : "lax",
+  maxAge: 24 * 60 * 60 * 1000,
+});
 
     res.status(200).json({
       message: "Login successful",
@@ -255,11 +256,15 @@ app.get(
 
 
 app.post("/api/auth/logout", (req, res) => {
+  const isProduction =
+    process.env.NODE_ENV === "production";
+
   res.clearCookie("adminToken", {
     httpOnly: true,
-    secure:
-      process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: isProduction,
+    sameSite: isProduction
+      ? "none"
+      : "lax",
   });
 
   res.status(200).json({
