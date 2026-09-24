@@ -56,9 +56,14 @@ const transporter = nodemailer.createTransport({
 // MIDDLEWARE
 // ------------------------------------
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://ismail-portfolio-7y5z.onrender.com",
+];
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: allowedOrigins,
     credentials: true,
   })
 );
