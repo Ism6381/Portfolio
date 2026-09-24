@@ -1,5 +1,5 @@
 import "./_header.scss";
-import Logo from "../Logo/Logo";
+import Logo from "../logo/Logo";
 
 function Header() {
   return (
