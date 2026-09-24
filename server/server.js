@@ -23,7 +23,45 @@ dns.setServers([
 
 const app = express();
 
-const PORT = process.env.PORT || 5000;
+
+// ------------------------------------
+// CORS
+// ------------------------------------
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://ismail-portfolio-7y5z.onrender.com",
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin)
+      ) {
+        return callback(null, true);
+      }
+
+      return callback(
+        new Error("Not allowed by CORS")
+      );
+    },
+
+    credentials: true,
+  })
+);
+
+app.use(express.json());
+app.use(cookieParser());
+
+const PORT =
+  process.env.PORT || 5000;
+
+
+// ------------------------------------
+// CONTACT RATE LIMIT
+// ------------------------------------
 
 const contactLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -39,37 +77,28 @@ const contactLimiter = rateLimit({
   },
 });
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT),
-  secure:
-    process.env.SMTP_SECURE === "true",
-
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
-
 
 // ------------------------------------
-// MIDDLEWARE
+// EMAIL TRANSPORTER
 // ------------------------------------
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://ismail-portfolio-7y5z.onrender.com",
-];
+const transporter =
+  nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
 
-app.use(
-  cors({
-    origin: allowedOrigins,
-    credentials: true,
-  })
-);
+    port: Number(
+      process.env.SMTP_PORT
+    ),
 
-app.use(express.json());
-app.use(cookieParser());
+    secure:
+      process.env.SMTP_SECURE ===
+      "true",
+
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
 
 
 // ------------------------------------
@@ -80,11 +109,17 @@ const upload = multer({
   storage: multer.memoryStorage(),
 
   limits: {
-    fileSize: 8 * 1024 * 1024,
+    fileSize:
+      8 * 1024 * 1024,
+
     files: 8,
   },
 
-  fileFilter: (req, file, callback) => {
+  fileFilter: (
+    req,
+    file,
+    callback
+  ) => {
     const allowedTypes = [
       "image/jpeg",
       "image/png",
@@ -92,7 +127,11 @@ const upload = multer({
       "image/avif",
     ];
 
-    if (!allowedTypes.includes(file.mimetype)) {
+    if (
+      !allowedTypes.includes(
+        file.mimetype
+      )
+    ) {
       return callback(
         new Error(
           "Only JPG, PNG, WEBP and AVIF images are allowed"
@@ -109,66 +148,97 @@ const upload = multer({
 // CLOUDINARY UPLOAD HELPER
 // ------------------------------------
 
-const uploadToCloudinary = (fileBuffer) => {
-  return new Promise((resolve, reject) => {
-    const uploadStream =
-      cloudinary.uploader.upload_stream(
-        {
-          folder: "portfolio/projects",
-          resource_type: "image",
-        },
-        (error, result) => {
-          if (error) {
-            reject(error);
-            return;
-          }
+const uploadToCloudinary = (
+  fileBuffer
+) => {
+  return new Promise(
+    (resolve, reject) => {
+      const uploadStream =
+        cloudinary.uploader.upload_stream(
+          {
+            folder:
+              "portfolio/projects",
 
-          resolve(result);
-        }
+            resource_type:
+              "image",
+          },
+
+          (error, result) => {
+            if (error) {
+              reject(error);
+              return;
+            }
+
+            resolve(result);
+          }
+        );
+
+      uploadStream.end(
+        fileBuffer
+      );
+    }
+  );
+};
+
+
+const deleteCloudinaryImages =
+  async (images = []) => {
+    const validImages =
+      images.filter(
+        (image) =>
+          image?.publicId
       );
 
-    uploadStream.end(fileBuffer);
-  });
-};
-const deleteCloudinaryImages = async (images = []) => {
-  const validImages = images.filter(
-    (image) => image?.publicId
-  );
-
-  await Promise.allSettled(
-    validImages.map((image) =>
-      cloudinary.uploader.destroy(image.publicId)
-    )
-  );
-};
+    await Promise.allSettled(
+      validImages.map(
+        (image) =>
+          cloudinary.uploader.destroy(
+            image.publicId
+          )
+      )
+    );
+  };
 
 
 // ------------------------------------
 // AUTH MIDDLEWARE
 // ------------------------------------
 
-const requireAuth = (req, res, next) => {
-  const token = req.cookies.adminToken;
+const requireAuth = (
+  req,
+  res,
+  next
+) => {
+  const token =
+    req.cookies.adminToken;
 
   if (!token) {
-    return res.status(401).json({
-      message: "Not authenticated",
-    });
+    return res
+      .status(401)
+      .json({
+        message:
+          "Not authenticated",
+      });
   }
 
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET
-    );
+    const decoded =
+      jwt.verify(
+        token,
+        process.env.JWT_SECRET
+      );
 
-    req.adminId = decoded.adminId;
+    req.adminId =
+      decoded.adminId;
 
     next();
   } catch {
-    return res.status(401).json({
-      message: "Invalid or expired session",
-    });
+    return res
+      .status(401)
+      .json({
+        message:
+          "Invalid or expired session",
+      });
   }
 };
 
@@ -177,100 +247,167 @@ const requireAuth = (req, res, next) => {
 // AUTH ROUTES
 // ------------------------------------
 
-app.post("/api/auth/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
+app.post(
+  "/api/auth/login",
 
-    if (!email || !password) {
-      return res.status(400).json({
-        message: "Email and password are required",
-      });
-    }
-
-    const admin = await Admin.findOne({
-      email: email.toLowerCase().trim(),
-    });
-
-    if (!admin) {
-      return res.status(401).json({
-        message: "Invalid email or password",
-      });
-    }
-
-    const passwordIsValid =
-      await bcrypt.compare(
+  async (req, res) => {
+    try {
+      const {
+        email,
         password,
-        admin.password
+      } = req.body;
+
+      if (
+        !email ||
+        !password
+      ) {
+        return res
+          .status(400)
+          .json({
+            message:
+              "Email and password are required",
+          });
+      }
+
+      const admin =
+        await Admin.findOne({
+          email:
+            email
+              .toLowerCase()
+              .trim(),
+        });
+
+      if (!admin) {
+        return res
+          .status(401)
+          .json({
+            message:
+              "Invalid email or password",
+          });
+      }
+
+      const passwordIsValid =
+        await bcrypt.compare(
+          password,
+          admin.password
+        );
+
+      if (
+        !passwordIsValid
+      ) {
+        return res
+          .status(401)
+          .json({
+            message:
+              "Invalid email or password",
+          });
+      }
+
+      const token =
+        jwt.sign(
+          {
+            adminId:
+              admin._id,
+          },
+
+          process.env.JWT_SECRET,
+
+          {
+            expiresIn:
+              "24h",
+          }
+        );
+
+      const isProduction =
+        process.env.NODE_ENV ===
+        "production";
+
+      res.cookie(
+        "adminToken",
+        token,
+        {
+          httpOnly: true,
+
+          secure:
+            isProduction,
+
+          sameSite:
+            isProduction
+              ? "none"
+              : "lax",
+
+          maxAge:
+            24 *
+            60 *
+            60 *
+            1000,
+        }
       );
 
-    if (!passwordIsValid) {
-      return res.status(401).json({
-        message: "Invalid email or password",
+      res.status(200).json({
+        message:
+          "Login successful",
+      });
+    } catch (error) {
+      console.error(
+        "Login error:",
+        error.message
+      );
+
+      res.status(500).json({
+        message:
+          "Login failed",
       });
     }
-
-    const token = jwt.sign(
-      {
-        adminId: admin._id,
-      },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "24h",
-      }
-    );
-
-    const isProduction = process.env.NODE_ENV === "production";
-
-res.cookie("adminToken", token, {
-  httpOnly: true,
-  secure: isProduction,
-  sameSite: isProduction ? "none" : "lax",
-  maxAge: 24 * 60 * 60 * 1000,
-});
-
-    res.status(200).json({
-      message: "Login successful",
-    });
-  } catch (error) {
-    console.error(
-      "Login error:",
-      error.message
-    );
-
-    res.status(500).json({
-      message: "Login failed",
-    });
-  }
-});
-
-
-app.get(
-  "/api/auth/me",
-  requireAuth,
-  (req, res) => {
-    res.status(200).json({
-      authenticated: true,
-    });
   }
 );
 
 
-app.post("/api/auth/logout", (req, res) => {
-  const isProduction =
-    process.env.NODE_ENV === "production";
+app.get(
+  "/api/auth/me",
 
-  res.clearCookie("adminToken", {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction
-      ? "none"
-      : "lax",
-  });
+  requireAuth,
 
-  res.status(200).json({
-    message: "Logged out successfully",
-  });
-});
+  (req, res) => {
+    res
+      .status(200)
+      .json({
+        authenticated:
+          true,
+      });
+  }
+);
+
+
+app.post(
+  "/api/auth/logout",
+
+  (req, res) => {
+    const isProduction =
+      process.env.NODE_ENV ===
+      "production";
+
+    res.clearCookie(
+      "adminToken",
+      {
+        httpOnly: true,
+
+        secure:
+          isProduction,
+
+        sameSite:
+          isProduction
+            ? "none"
+            : "lax",
+      }
+    );
+
+    res.status(200).json({
+      message:
+        "Logged out successfully",
+    });
+  }
+);
 
 
 // ------------------------------------
@@ -280,49 +417,75 @@ app.post("/api/auth/logout", (req, res) => {
 
 app.post(
   "/api/uploads/projects",
+
   requireAuth,
-  upload.array("images", 8),
+
+  upload.array(
+    "images",
+    8
+  ),
+
   async (req, res) => {
-    const uploadedImages = [];
+    const uploadedImages =
+      [];
 
     try {
       if (
         !req.files ||
         req.files.length === 0
       ) {
-        return res.status(400).json({
-          message: "No images were selected",
-        });
+        return res
+          .status(400)
+          .json({
+            message:
+              "No images were selected",
+          });
       }
 
-      for (const file of req.files) {
+      for (
+        const file of req.files
+      ) {
         const result =
           await uploadToCloudinary(
             file.buffer
           );
 
         uploadedImages.push({
-          url: result.secure_url,
-          publicId: result.public_id,
+          url:
+            result.secure_url,
+
+          publicId:
+            result.public_id,
         });
       }
 
-      res.status(201).json({
-        message:
-          "Images uploaded successfully",
-        images: uploadedImages,
-      });
+      res
+        .status(201)
+        .json({
+          message:
+            "Images uploaded successfully",
+
+          images:
+            uploadedImages,
+        });
     } catch (error) {
       console.error(
         "Image upload error:",
         error.message
       );
-      for (const image of uploadedImages) {
+
+      for (
+        const image of uploadedImages
+      ) {
         try {
-          await cloudinary.uploader.destroy(
-            image.publicId
-          );
-        } catch (cleanupError) {
+          await cloudinary
+            .uploader
+            .destroy(
+              image.publicId
+            );
+        } catch (
+          cleanupError
+        ) {
           console.error(
             "Cloudinary cleanup error:",
             cleanupError.message
@@ -330,10 +493,12 @@ app.post(
         }
       }
 
-      res.status(500).json({
-        message:
-          "Failed to upload images",
-      });
+      res
+        .status(500)
+        .json({
+          message:
+            "Failed to upload images",
+        });
     }
   }
 );
@@ -343,11 +508,18 @@ app.post(
 // HEALTH
 // ------------------------------------
 
-app.get("/api/health", (req, res) => {
-  res.status(200).json({
-    message: "Portfolio API is running",
-  });
-});
+app.get(
+  "/api/health",
+
+  (req, res) => {
+    res
+      .status(200)
+      .json({
+        message:
+          "Portfolio API is running",
+      });
+  }
+);
 
 
 // ------------------------------------
@@ -355,23 +527,32 @@ app.get("/api/health", (req, res) => {
 // PUBLIC
 // ------------------------------------
 
-app.get("/api/projects", async (req, res) => {
-  try {
-    const projects = await Project.find();
+app.get(
+  "/api/projects",
 
-    res.status(200).json(projects);
-  } catch (error) {
-    console.error(
-      "Error fetching projects:",
-      error.message
-    );
+  async (req, res) => {
+    try {
+      const projects =
+        await Project.find();
 
-    res.status(500).json({
-      message:
-        "Failed to fetch projects",
-    });
+      res
+        .status(200)
+        .json(projects);
+    } catch (error) {
+      console.error(
+        "Error fetching projects:",
+        error.message
+      );
+
+      res
+        .status(500)
+        .json({
+          message:
+            "Failed to fetch projects",
+        });
+    }
   }
-});
+);
 
 
 // ------------------------------------
@@ -381,30 +562,39 @@ app.get("/api/projects", async (req, res) => {
 
 app.get(
   "/api/projects/:slug",
+
   async (req, res) => {
     try {
       const project =
         await Project.findOne({
-          slug: req.params.slug,
+          slug:
+            req.params.slug,
         });
 
       if (!project) {
-        return res.status(404).json({
-          message: "Project not found",
-        });
+        return res
+          .status(404)
+          .json({
+            message:
+              "Project not found",
+          });
       }
 
-      res.status(200).json(project);
+      res
+        .status(200)
+        .json(project);
     } catch (error) {
       console.error(
         "Error fetching project:",
         error.message
       );
 
-      res.status(500).json({
-        message:
-          "Failed to fetch project",
-      });
+      res
+        .status(500)
+        .json({
+          message:
+            "Failed to fetch project",
+        });
     }
   }
 );
@@ -417,7 +607,9 @@ app.get(
 
 app.post(
   "/api/projects",
+
   requireAuth,
+
   async (req, res) => {
     try {
       const existingProjects =
@@ -428,7 +620,10 @@ app.post(
 
       const highestNumber =
         existingProjects.reduce(
-          (highest, project) => {
+          (
+            highest,
+            project
+          ) => {
             const projectNumber =
               parseInt(
                 project.number,
@@ -448,34 +643,46 @@ app.post(
               projectNumber
             );
           },
+
           0
         );
 
-      const nextNumber = String(
-        highestNumber + 1
-      ).padStart(2, "0");
+      const nextNumber =
+        String(
+          highestNumber + 1
+        ).padStart(
+          2,
+          "0"
+        );
 
       const project =
         await Project.create({
           ...req.body,
-          number: nextNumber,
+
+          number:
+            nextNumber,
         });
 
-      res.status(201).json({
-        message:
-          "Project created successfully",
-        project,
-      });
+      res
+        .status(201)
+        .json({
+          message:
+            "Project created successfully",
+
+          project,
+        });
     } catch (error) {
       console.error(
         "Error creating project:",
         error.message
       );
 
-      res.status(500).json({
-        message:
-          "Failed to create project",
-      });
+      res
+        .status(500)
+        .json({
+          message:
+            "Failed to create project",
+        });
     }
   }
 );
@@ -488,29 +695,41 @@ app.post(
 
 app.put(
   "/api/projects/:id",
+
   requireAuth,
+
   async (req, res) => {
     try {
       const existingProject =
-        await Project.findById(req.params.id);
+        await Project.findById(
+          req.params.id
+        );
 
-      if (!existingProject) {
-        return res.status(404).json({
-          message: "Project not found",
-        });
+      if (
+        !existingProject
+      ) {
+        return res
+          .status(404)
+          .json({
+            message:
+              "Project not found",
+          });
       }
 
-      const nextImages = Array.isArray(
-        req.body.images
-      )
-        ? req.body.images
-        : existingProject.images;
-
-      const nextPublicIds = new Set(
-        nextImages.map(
-          (image) => image.publicId
+      const nextImages =
+        Array.isArray(
+          req.body.images
         )
-      );
+          ? req.body.images
+          : existingProject.images;
+
+      const nextPublicIds =
+        new Set(
+          nextImages.map(
+            (image) =>
+              image.publicId
+          )
+        );
 
       const removedImages =
         existingProject.images.filter(
@@ -522,7 +741,9 @@ app.put(
 
       existingProject.set({
         ...req.body,
-        images: nextImages,
+
+        images:
+          nextImages,
       });
 
       await existingProject.save();
@@ -531,21 +752,27 @@ app.put(
         removedImages
       );
 
-      res.status(200).json({
-        message:
-          "Project updated successfully",
-        project: existingProject,
-      });
+      res
+        .status(200)
+        .json({
+          message:
+            "Project updated successfully",
+
+          project:
+            existingProject,
+        });
     } catch (error) {
       console.error(
         "Error updating project:",
         error.message
       );
 
-      res.status(500).json({
-        message:
-          "Failed to update project",
-      });
+      res
+        .status(500)
+        .json({
+          message:
+            "Failed to update project",
+        });
     }
   }
 );
@@ -558,41 +785,52 @@ app.put(
 
 app.delete(
   "/api/projects/:id",
+
   requireAuth,
+
   async (req, res) => {
     try {
       const project =
-        await Project.findByIdAndDelete(
-          req.params.id
-        );
+        await Project
+          .findByIdAndDelete(
+            req.params.id
+          );
 
       if (!project) {
-        return res.status(404).json({
-          message: "Project not found",
-        });
+        return res
+          .status(404)
+          .json({
+            message:
+              "Project not found",
+          });
       }
 
       await deleteCloudinaryImages(
         project.images
       );
 
-      res.status(200).json({
-        message:
-          "Project deleted successfully",
-      });
+      res
+        .status(200)
+        .json({
+          message:
+            "Project deleted successfully",
+        });
     } catch (error) {
       console.error(
         "Error deleting project:",
         error.message
       );
 
-      res.status(500).json({
-        message:
-          "Failed to delete project",
-      });
+      res
+        .status(500)
+        .json({
+          message:
+            "Failed to delete project",
+        });
     }
   }
 );
+
 
 // ------------------------------------
 // CONTACT
@@ -601,7 +839,9 @@ app.delete(
 
 app.post(
   "/api/contact",
+
   contactLimiter,
+
   async (req, res) => {
     try {
       const {
@@ -612,18 +852,22 @@ app.post(
         website,
       } = req.body;
 
+
       // --------------------------------
       // HONEYPOT ANTI-SPAM
       // --------------------------------
 
-      if (website?.trim()) {
-        // Pretend that the message was sent
-        // so the bot does not know it was blocked.
-        return res.status(200).json({
-          message:
-            "Message sent successfully.",
-        });
+      if (
+        website?.trim()
+      ) {
+        return res
+          .status(200)
+          .json({
+            message:
+              "Message sent successfully.",
+          });
       }
+
 
       // --------------------------------
       // REQUIRED FIELDS
@@ -635,11 +879,14 @@ app.post(
         !subject?.trim() ||
         !message?.trim()
       ) {
-        return res.status(400).json({
-          message:
-            "Please complete all fields.",
-        });
+        return res
+          .status(400)
+          .json({
+            message:
+              "Please complete all fields.",
+          });
       }
+
 
       // --------------------------------
       // LENGTH VALIDATION
@@ -651,11 +898,14 @@ app.post(
         subject.length > 120 ||
         message.length > 2000
       ) {
-        return res.status(400).json({
-          message:
-            "One or more fields are too long.",
-        });
+        return res
+          .status(400)
+          .json({
+            message:
+              "One or more fields are too long.",
+          });
       }
+
 
       // --------------------------------
       // EMAIL VALIDATION
@@ -665,31 +915,45 @@ app.post(
         /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
       if (
-        !emailRegex.test(email.trim())
+        !emailRegex.test(
+          email.trim()
+        )
       ) {
-        return res.status(400).json({
-          message:
-            "Please enter a valid email address.",
-        });
+        return res
+          .status(400)
+          .json({
+            message:
+              "Please enter a valid email address.",
+          });
       }
+
 
       // --------------------------------
       // CLEAN VALUES
       // --------------------------------
 
-      const safeName = name
-        .trim()
-        .replace(/[\r\n]/g, " ");
+      const safeName =
+        name
+          .trim()
+          .replace(
+            /[\r\n]/g,
+            " "
+          );
 
-      const safeSubject = subject
-        .trim()
-        .replace(/[\r\n]/g, " ");
+      const safeSubject =
+        subject
+          .trim()
+          .replace(
+            /[\r\n]/g,
+            " "
+          );
 
       const safeEmail =
         email.trim();
 
       const safeMessage =
         message.trim();
+
 
       // --------------------------------
       // SEND EMAIL
@@ -700,9 +964,11 @@ app.post(
           `"Portfolio Contact" <${process.env.SMTP_USER}>`,
 
         to:
-          process.env.CONTACT_TO_EMAIL,
+          process.env
+            .CONTACT_TO_EMAIL,
 
-        replyTo: safeEmail,
+        replyTo:
+          safeEmail,
 
         subject:
           `Portfolio Contact: ${safeSubject}`,
@@ -724,66 +990,93 @@ ${safeMessage}
         `.trim(),
       });
 
-      return res.status(200).json({
-        message:
-          "Message sent successfully.",
-      });
+      return res
+        .status(200)
+        .json({
+          message:
+            "Message sent successfully.",
+        });
     } catch (error) {
       console.error(
         "Contact email error:",
         error.message
       );
 
-      return res.status(500).json({
-        message:
-          "Message could not be sent. Please try again.",
-      });
+      return res
+        .status(500)
+        .json({
+          message:
+            "Message could not be sent. Please try again.",
+        });
     }
   }
 );
+
 
 // ------------------------------------
 // MULTER ERROR HANDLER
 // ------------------------------------
 
-app.use((error, req, res, next) => {
-  if (
-    error instanceof
-    multer.MulterError
-  ) {
-    return res.status(400).json({
-      message: error.message,
-    });
-  }
+app.use(
+  (
+    error,
+    req,
+    res,
+    next
+  ) => {
+    if (
+      error instanceof
+      multer.MulterError
+    ) {
+      return res
+        .status(400)
+        .json({
+          message:
+            error.message,
+        });
+    }
 
-  if (
-    error.message ===
-    "Only JPG, PNG, WEBP and AVIF images are allowed"
-  ) {
-    return res.status(400).json({
-      message: error.message,
-    });
-  }
+    if (
+      error.message ===
+      "Only JPG, PNG, WEBP and AVIF images are allowed"
+    ) {
+      return res
+        .status(400)
+        .json({
+          message:
+            error.message,
+        });
+    }
 
-  next(error);
-});
+    next(error);
+  }
+);
 
 
 // ------------------------------------
 // GENERAL ERROR HANDLER
 // ------------------------------------
 
-app.use((error, req, res, next) => {
-  console.error(
-    "Unhandled server error:",
-    error.message
-  );
+app.use(
+  (
+    error,
+    req,
+    res,
+    next
+  ) => {
+    console.error(
+      "Unhandled server error:",
+      error.message
+    );
 
-  res.status(500).json({
-    message:
-      "Internal server error",
-  });
-});
+    res
+      .status(500)
+      .json({
+        message:
+          "Internal server error",
+      });
+  }
+);
 
 
 // ------------------------------------
@@ -791,16 +1084,25 @@ app.use((error, req, res, next) => {
 // ------------------------------------
 
 mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log("MongoDB connected");
+  .connect(
+    process.env.MONGODB_URI
+  )
 
-    app.listen(PORT, () => {
-      console.log(
-        `Server running on http://localhost:${PORT}`
-      );
-    });
+  .then(() => {
+    console.log(
+      "MongoDB connected"
+    );
+
+    app.listen(
+      PORT,
+      () => {
+        console.log(
+          `Server running on http://localhost:${PORT}`
+        );
+      }
+    );
   })
+
   .catch((error) => {
     console.error(
       "MongoDB connection error:",
