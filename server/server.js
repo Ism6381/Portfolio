@@ -959,21 +959,46 @@ app.post(
       // SEND EMAIL
       // --------------------------------
 
-      await transporter.sendMail({
-        from:
-          `"Portfolio Contact" <${process.env.SMTP_USER}>`,
+      const brevoResponse = await fetch(
+  "https://api.brevo.com/v3/smtp/email",
+  {
+    method: "POST",
 
-        to:
+    headers: {
+      accept: "application/json",
+      "api-key":
+        process.env.BREVO_API_KEY,
+      "content-type":
+        "application/json",
+    },
+
+    body: JSON.stringify({
+      sender: {
+        name:
+          "Ismail Ibrosh Portfolio",
+
+        email:
           process.env
-            .CONTACT_TO_EMAIL,
+            .BREVO_SENDER_EMAIL,
+      },
 
-        replyTo:
-          safeEmail,
+      to: [
+        {
+          email:
+            process.env
+              .CONTACT_TO_EMAIL,
+        },
+      ],
 
-        subject:
-          `Portfolio Contact: ${safeSubject}`,
+      replyTo: {
+        email: safeEmail,
+        name: safeName,
+      },
 
-        text: `
+      subject:
+        `Portfolio Contact: ${safeSubject}`,
+
+      textContent: `
 New message from your portfolio
 
 Name:
@@ -987,8 +1012,24 @@ ${safeSubject}
 
 Message:
 ${safeMessage}
-        `.trim(),
-      });
+      `.trim(),
+    }),
+  }
+);
+
+if (!brevoResponse.ok) {
+  const brevoError =
+    await brevoResponse.text();
+
+  console.error(
+    "Brevo API error:",
+    brevoError
+  );
+
+  throw new Error(
+    "Brevo email sending failed"
+  );
+}
 
       return res
         .status(200)
